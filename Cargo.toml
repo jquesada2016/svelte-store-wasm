@@ -1,14 +1,24 @@
 [package]
-name = "svelte-wasm"
+name = "svelte-store"
 version = "0.1.0"
 edition = "2021"
 authors = ["Jose Quesada <jquesada2016@fau.edu>"]
 license = "MIT"
+description = "Ergonomic Rust wrapper for using Svelte stores through WASM."
+homepage = "https://github.com/jquesada2016/svelte-store-wasm"
+documentation = "docs.rs/svelte-store-wasm"
+repository = "https://github.com/jquesada2016/svelte-store-wasm"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clone-macro = "0.1"
-js-sys = "0.3"
 log = "0.4"
 wasm-bindgen = "0.2"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+clone-macro = "0.1"
+js-sys = "0.3"
+
+[dev-dependencies]
+js-sys = "0.3"

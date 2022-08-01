@@ -63,7 +63,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "svelte-wasm"
+name = "svelte-store"
 version = "0.1.0"
 dependencies = [
  "clone-macro",

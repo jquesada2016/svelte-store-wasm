@@ -6,7 +6,7 @@ authors = ["Jose Quesada <jquesada2016@fau.edu>"]
 license = "MIT"
 description = "Ergonomic Rust wrapper for using Svelte stores through WASM."
 homepage = "https://github.com/jquesada2016/svelte-store-wasm"
-documentation = "docs.rs/svelte-store-wasm"
+documentation = "https://docs.rs/svelte-store-wasm"
 repository = "https://github.com/jquesada2016/svelte-store-wasm"
 
 

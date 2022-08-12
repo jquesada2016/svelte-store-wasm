@@ -303,8 +303,14 @@ impl<T: 'static> Readable<T> {
     ///     }
     /// }
     /// ```
-    #[cfg(target_arch = "wasm32")]
     pub fn get_store(&self) -> JsValue {
-        self.store.clone()
+        #[cfg(not(target_arch = "wasm32"))]
+        panic!(
+            "`Readable::get_store()` can only be called \
+             within `wasm32` targets"
+        );
+
+        #[cfg(target_arch = "wasm32")]
+        return self.store.clone();
     }
 }

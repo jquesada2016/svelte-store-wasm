@@ -1,6 +1,6 @@
 [package]
 name = "svelte-store"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 authors = ["Jose Quesada <jquesada2016@fau.edu>"]
 license = "MIT"

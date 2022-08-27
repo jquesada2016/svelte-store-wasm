@@ -40,14 +40,13 @@ use wasm_bindgen::prelude::*;
 pub struct Readable<T> {
     value: Rc<UnsafeCell<T>>,
     #[cfg(target_arch = "wasm32")]
-    store: bindings::Readable,
+    writable_store: bindings::Writable,
     #[cfg(target_arch = "wasm32")]
-    set_store: Rc<OnceCell<js_sys::Function>>,
-    #[cfg(target_arch = "wasm32")]
-    _set_store_closure: Closure<dyn FnMut(js_sys::Function)>,
+    derived_store: bindings::Readable,
     #[allow(clippy::type_complexity)]
     #[cfg(target_arch = "wasm32")]
-    mapped_set_fn: Rc<RefCell<dyn FnMut(&T) -> JsValue>>,
+    mapped_set_fn: Box<dyn FnMut(&T) -> JsValue>,
+    _derived_store_map_fn: Closure<dyn FnMut(JsValue) -> JsValue>,
 }
 
 impl<T> fmt::Debug for Readable<T>
@@ -103,39 +102,24 @@ impl<T: 'static> Readable<T> {
     {
         #[cfg(target_arch = "wasm32")]
         let this = {
-            let mapped_set_fn = Rc::new(RefCell::new(
-                Box::new(mapping_fn) as Box<dyn FnMut(&T) -> JsValue>
-            ));
+            let mut mapped_set_fn =
+                Box::new(mapping_fn) as Box<dyn FnMut(&T) -> JsValue>;
 
-            let set_store = Rc::new(OnceCell::new());
+            let writable_store = bindings::writable(mapped_set_fn(unsafe {
+                &*initial_value.get()
+            }));
 
-            let start = Closure::<dyn FnMut(js_sys::Function)>::new(clone!(
-                [set_store, initial_value, mapped_set_fn],
-                move |set_fn: js_sys::Function| {
-                    // Since the value might have changed from the moment the
-                    // store was created, we need to set the store again
-                    let _ = set_fn.call1(
-                        &JsValue::NULL,
-                        &(mapped_set_fn.borrow_mut())(unsafe {
-                            &*initial_value.get()
-                        }),
-                    );
+            let derived_store_map_fn = Closure::new(|v| v);
 
-                    let _ = set_store.set(set_fn);
-                }
-            ));
-
-            let store = bindings::readable(
-                mapped_set_fn.borrow_mut()(unsafe { &*initial_value.get() }),
-                &start,
-            );
+            let derived_store =
+                bindings::derived(&writable_store, &derived_store_map_fn);
 
             Self {
                 value: initial_value,
-                store,
-                set_store,
-                _set_store_closure: start,
+                writable_store,
+                derived_store,
                 mapped_set_fn,
+                _derived_store_map_fn: derived_store_map_fn,
             }
         };
 
@@ -233,11 +217,7 @@ impl<T: 'static> Readable<T> {
         *value = new_value;
 
         #[cfg(target_arch = "wasm32")]
-        if let Some(set_fn) = self.set_store.get() {
-            set_fn
-                .call1(&JsValue::NULL, &self.mapped_set_fn.borrow_mut()(value))
-                .expect("failed to set readable store");
-        }
+        self.writable_store.set((self.mapped_set_fn)(value));
     }
 
     /// Calls the provided `f` with a `&mut T`, returning
@@ -259,10 +239,8 @@ impl<T: 'static> Readable<T> {
         let o = f(value);
 
         #[cfg(target_arch = "wasm32")]
-        if let Some(set_fn) = self.set_store.get() {
-            set_fn
-                .call1(&JsValue::NULL, &self.mapped_set_fn.borrow_mut()(value))
-                .expect("failed to set readable store");
+        {
+            self.writable_store.set((self.mapped_set_fn)(value));
         }
 
         o
@@ -311,6 +289,6 @@ impl<T: 'static> Readable<T> {
         );
 
         #[cfg(target_arch = "wasm32")]
-        return self.store.clone();
+        return self.derived_store.clone();
     }
 }

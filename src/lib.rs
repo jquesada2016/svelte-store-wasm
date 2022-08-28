@@ -17,28 +17,19 @@
 //! the [`Readable::get_store`] example. (Note: [`Readable::get_store`]
 //! fn and example is only available on `wasm32` targets)
 
-#![feature(once_cell)]
-
-#[cfg(target_arch = "wasm32")]
-#[macro_use]
-extern crate clone_macro;
-
 #[cfg(target_arch = "wasm32")]
 mod bindings;
 
-#[cfg(target_arch = "wasm32")]
-use std::cell::{OnceCell, RefCell};
 use std::{
     cell::UnsafeCell,
     fmt,
     ops::{self, Deref},
-    rc::Rc,
 };
 use wasm_bindgen::prelude::*;
 
 /// Rust-managed `Readable` Svelte store.
 pub struct Readable<T> {
-    value: Rc<UnsafeCell<T>>,
+    value: UnsafeCell<T>,
     #[cfg(target_arch = "wasm32")]
     writable_store: bindings::Writable,
     #[cfg(target_arch = "wasm32")]
@@ -96,7 +87,7 @@ impl<T> ops::Deref for Readable<T> {
 
 impl<T: 'static> Readable<T> {
     #[allow(unused_variables)]
-    fn init_store<F>(initial_value: Rc<UnsafeCell<T>>, mapping_fn: F) -> Self
+    fn init_store<F>(initial_value: UnsafeCell<T>, mapping_fn: F) -> Self
     where
         F: FnMut(&T) -> JsValue + 'static,
     {
@@ -167,9 +158,7 @@ impl<T: 'static> Readable<T> {
     where
         T: Clone + Into<JsValue>,
     {
-        Self::init_store(Rc::new(UnsafeCell::new(initial_value)), |v| {
-            v.clone().into()
-        })
+        Self::init_store(UnsafeCell::new(initial_value), |v| v.clone().into())
     }
 
     /// Creates a new `Readable` Svelte store which calls its mapping fn each
@@ -201,7 +190,7 @@ impl<T: 'static> Readable<T> {
     where
         F: FnMut(&T) -> JsValue + 'static,
     {
-        Self::init_store(Rc::new(UnsafeCell::new(initial_value)), mapping_fn)
+        Self::init_store(UnsafeCell::new(initial_value), mapping_fn)
     }
 
     /// Sets the value of the store, notifying all store

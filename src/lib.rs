@@ -37,6 +37,7 @@ pub struct Readable<T> {
     #[allow(clippy::type_complexity)]
     #[cfg(target_arch = "wasm32")]
     mapped_set_fn: Box<dyn FnMut(&T) -> JsValue>,
+    #[cfg(target_arch = "wasm32")]
     _derived_store_map_fn: Closure<dyn FnMut(JsValue) -> JsValue>,
 }
 
